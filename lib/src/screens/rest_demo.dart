@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
+import 'package:state_change_demo/global_styles.dart';
 import 'package:state_change_demo/src/models/post.model.dart';
 import 'package:state_change_demo/src/models/user.model.dart';
+import 'package:state_change_demo/src/widgets/summary_card.dart';
 
 class RestDemoScreen extends StatefulWidget {
   const RestDemoScreen({super.key});
@@ -15,11 +17,14 @@ class RestDemoScreen extends StatefulWidget {
 
 class _RestDemoScreenState extends State<RestDemoScreen> {
   PostController controller = PostController();
+  UserController usercontroller = UserController();
 
   @override
   void initState() {
     super.initState();
     controller.getPosts();
+    usercontroller.getUsers();
+    List<User> userList = usercontroller.userList;
   }
 
   @override
@@ -30,6 +35,7 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
         leading: IconButton(
             onPressed: () {
               controller.getPosts();
+              usercontroller.getUsers();
             },
             icon: const Icon(Icons.refresh)),
         actions: [
@@ -55,17 +61,15 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
                   child: SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           for (Post post in controller.postList)
-                            Container(
-                                padding: const EdgeInsets.all(8),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.blueAccent),
-                                    borderRadius: BorderRadius.circular(16)),
-                                child: Text(post.toString()))
+                            GestureDetector(
+                              onTap: () => _dialogBuilder(context, post,
+                                  usercontroller.getUser(post.id).name),
+                              child: SummaryCard(
+                                  post: post, usercontroller: usercontroller),
+                            ),
                         ],
                       )),
                 );
@@ -84,6 +88,34 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
   showNewPostFunction(BuildContext context) {
     AddPostDialog.show(context, controller: controller);
   }
+}
+
+Future<void> _dialogBuilder(BuildContext context, Post post, String username) {
+  return showDialog<void>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: Colors.white,
+        title: Text(post.title, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                post.body,
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [Text(username)],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class AddPostDialog extends StatefulWidget {
@@ -164,7 +196,7 @@ class PostController with ChangeNotifier {
       required int userId}) async {
     try {
       working = true;
-      if(error != null ) error = null;
+      if (error != null) error = null;
       print(title);
       print(body);
       print(userId);
@@ -226,6 +258,7 @@ class UserController with ChangeNotifier {
   Object? error;
 
   List<User> get userList => users.values.whereType<User>().toList();
+  User getUser(int id) => userList.firstWhere((user) => user.id == id);
 
   getUsers() async {
     try {
