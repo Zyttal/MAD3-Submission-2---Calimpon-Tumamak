@@ -97,6 +97,9 @@ Future<void> _dialogBuilder(BuildContext context, Post post, String username) {
       return AlertDialog(
         backgroundColor: Colors.white,
         title: Text(post.title, style: TextStyle(fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
