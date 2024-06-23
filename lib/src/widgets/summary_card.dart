@@ -40,7 +40,7 @@ class SummaryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text("- ${usercontroller.getUser(post.userId).name}"),
+                Text("- ${usercontroller.getUser(post.userId)!.name}"),
               ],
             )
           ],

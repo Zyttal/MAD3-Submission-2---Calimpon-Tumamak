@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
-import 'package:state_change_demo/global_styles.dart';
 import 'package:state_change_demo/src/models/post.model.dart';
 import 'package:state_change_demo/src/models/user.model.dart';
 import 'package:state_change_demo/src/widgets/summary_card.dart';
@@ -65,8 +64,11 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
                         children: [
                           for (Post post in controller.postList)
                             GestureDetector(
-                              onTap: () => _dialogBuilder(context, post,
-                                  usercontroller.getUser(post.id).name),
+                              onTap: () => _dialogBuilder(
+                                  context,
+                                  post,
+                                  usercontroller.getUser(post.id)!.name,
+                                  controller),
                               child: SummaryCard(
                                   post: post, usercontroller: usercontroller),
                             ),
@@ -90,32 +92,63 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
   }
 }
 
-Future<void> _dialogBuilder(BuildContext context, Post post, String username) {
-  return showDialog<void>(
+Future<void> _dialogBuilder(BuildContext context, Post post, String? username,
+    PostController controller) async {
+  TextEditingController titleController =
+      TextEditingController(text: post.title);
+  TextEditingController bodyController = TextEditingController(text: post.body);
+
+  await showDialog<void>(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
         backgroundColor: Colors.white,
-        title: Text(post.title, style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text("Edit Post", style: TextStyle(fontWeight: FontWeight.bold)),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15.0),
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                post.body,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: InputDecoration(
+                labelText: 'Title',
               ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [Text(username)],
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: bodyController,
+              decoration: InputDecoration(
+                labelText: 'Content',
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Post updatedPost = Post(
+                id: post.id,
+                title: titleController.text,
+                body: bodyController.text,
+                userId: post.userId,
+              );
+
+              controller.updatePostLocally(updatedPost);
+              Navigator.of(context).pop();
+            },
+            child: Text("Update"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              controller.deletePost(post.id);
+              Navigator.of(context).pop();
+            },
+            child: Text("Delete"),
+          ),
+        ],
       );
     },
   );
@@ -182,14 +215,14 @@ class _AddPostDialogState extends State<AddPostDialog> {
 
 class PostController with ChangeNotifier {
   Map<String, dynamic> posts = {};
+  List<Post> postList = []; // Convert to a local List for UI
   bool working = true;
   Object? error;
-
-  List<Post> get postList => posts.values.whereType<Post>().toList();
 
   clear() {
     error = null;
     posts = {};
+    postList = [];
     notifyListeners();
   }
 
@@ -229,6 +262,28 @@ class PostController with ChangeNotifier {
     }
   }
 
+  Future<void> updatePostLocally(Post updatedPost) async {
+    try {
+      working = true;
+      if (error != null) error = null;
+
+      int index = postList.indexWhere((post) => post.id == updatedPost.id);
+      if (index != -1) {
+        postList[index] = updatedPost;
+        posts[updatedPost.id.toString()] = updatedPost;
+        notifyListeners();
+      }
+
+      working = false;
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> getPosts() async {
     try {
       working = true;
@@ -243,6 +298,27 @@ class PostController with ChangeNotifier {
 
       List<Post> tmpPost = result.map((e) => Post.fromJson(e)).toList();
       posts = {for (Post p in tmpPost) "${p.id}": p};
+      postList = tmpPost;
+      working = false;
+      notifyListeners();
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> deletePost(int id) async {
+    try {
+      working = true;
+      notifyListeners();
+
+      // Remove post from local state for UI Changes
+      posts.remove(id.toString());
+      postList.removeWhere((post) => post.id == id);
+
       working = false;
       notifyListeners();
     } catch (e, st) {
@@ -261,7 +337,27 @@ class UserController with ChangeNotifier {
   Object? error;
 
   List<User> get userList => users.values.whereType<User>().toList();
-  User getUser(int id) => userList.firstWhere((user) => user.id == id);
+  User? getUser(int id) {
+    // Check if the user exists in the map
+    if (users.containsKey(id.toString())) {
+      return users[id.toString()];
+    } else {
+      return const User(
+          id: 0,
+          name: "unk",
+          username: "unk",
+          email: "unk",
+          address: Address(
+              street: "unk",
+              suite: "unk",
+              city: "unk",
+              zipcode: "unk",
+              geo: Geo(lat: "unk", lng: "unk")),
+          phone: "unk",
+          website: "unk",
+          company: Company(name: "unk", catchPhrase: "unk", bs: "unk"));
+    }
+  }
 
   getUsers() async {
     try {
