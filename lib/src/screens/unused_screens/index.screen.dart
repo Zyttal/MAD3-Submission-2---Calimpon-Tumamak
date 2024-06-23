@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:state_change_demo/src/screens/key_example.dart';
-import 'package:state_change_demo/src/screens/no_key_example.dart';
-import 'package:state_change_demo/src/screens/simple_counter.screen.dart';
-import 'package:state_change_demo/src/screens/simple_counter_with_initial_value.screen.dart';
-import 'package:state_change_demo/src/screens/stfulP_stfulP.dart';
-import 'package:state_change_demo/src/screens/stfulP_stlssC.dart';
+import 'package:state_change_demo/src/screens/unused_screens/key_example.dart';
+import 'package:state_change_demo/src/screens/unused_screens/no_key_example.dart';
+import 'package:state_change_demo/src/screens/unused_screens/simple_counter.screen.dart';
+import 'package:state_change_demo/src/screens/unused_screens/simple_counter_with_initial_value.screen.dart';
+import 'package:state_change_demo/src/screens/unused_screens/stfulP_stfulP.dart';
+import 'package:state_change_demo/src/screens/unused_screens/stfulP_stlssC.dart';
 
 class IndexScreen extends StatelessWidget {
   /// "/"
@@ -37,7 +37,8 @@ class IndexScreen extends StatelessWidget {
                 ),
                 ListTile(
                   onTap: () {
-                    GoRouter.of(context).push(SimpleCounterScreenWithInitialValue.path);
+                    GoRouter.of(context)
+                        .push(SimpleCounterScreenWithInitialValue.path);
                   },
                   title: const Text(SimpleCounterScreenWithInitialValue.name),
                   trailing: const Icon(Icons.chevron_right),
