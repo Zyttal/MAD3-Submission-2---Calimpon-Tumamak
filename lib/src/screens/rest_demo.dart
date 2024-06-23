@@ -102,9 +102,11 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
   }
 }
 
+
 Future<void> _dialogBuilder(BuildContext context, Post post, String username,
     PostController controller) {
   return showDialog<void>(
+
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
@@ -219,6 +221,29 @@ Future<void> _dialogBuilder(BuildContext context, Post post, String username,
             ),
           ),
         ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Post updatedPost = Post(
+                id: post.id,
+                title: titleController.text,
+                body: bodyController.text,
+                userId: post.userId,
+              );
+
+              controller.updatePostLocally(updatedPost);
+              Navigator.of(context).pop();
+            },
+            child: Text("Update"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              controller.deletePost(post.id);
+              Navigator.of(context).pop();
+            },
+            child: Text("Delete"),
+          ),
+        ],
       );
     },
   );
@@ -285,6 +310,7 @@ class _AddPostDialogState extends State<AddPostDialog> {
 
 class PostController with ChangeNotifier {
   Map<String, dynamic> posts = {};
+
   List<Post> postList = [];
   bool working = true;
   Object? error;
@@ -333,6 +359,28 @@ class PostController with ChangeNotifier {
     }
   }
 
+  Future<void> updatePostLocally(Post updatedPost) async {
+    try {
+      working = true;
+      if (error != null) error = null;
+
+      int index = postList.indexWhere((post) => post.id == updatedPost.id);
+      if (index != -1) {
+        postList[index] = updatedPost;
+        posts[updatedPost.id.toString()] = updatedPost;
+        notifyListeners();
+      }
+
+      working = false;
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> getPosts() async {
     try {
       working = true;
@@ -349,6 +397,7 @@ class PostController with ChangeNotifier {
 
       List<Post> tmpPost = result.map((e) => Post.fromJson(e)).toList();
       posts = {for (Post p in tmpPost) "${p.id}": p};
+
       print(posts);
       postList = tmpPost;
       lastPostCounter = limit + 1;
@@ -362,6 +411,7 @@ class PostController with ChangeNotifier {
       notifyListeners();
     }
   }
+
 
   Future<Post> getPost() async {
     try {
