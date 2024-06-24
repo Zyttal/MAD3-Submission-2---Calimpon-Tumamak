@@ -5,6 +5,8 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
 import 'package:state_change_demo/src/models/post.model.dart';
 import 'package:state_change_demo/src/models/user.model.dart';
+import 'package:state_change_demo/src/screens/add_screen.dart';
+import 'package:state_change_demo/src/screens/edit_screen.dart';
 import 'package:state_change_demo/src/widgets/summary_card.dart';
 
 class RestDemoScreen extends StatefulWidget {
@@ -23,7 +25,6 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
     super.initState();
     controller.getPosts();
     usercontroller.getUsers();
-    List<User> userList = usercontroller.userList;
   }
 
   @override
@@ -40,7 +41,14 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
         actions: [
           IconButton(
               onPressed: () {
-                showNewPostFunction(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => AddScreen(
+                          controller: controller,
+                          userController: usercontroller)),
+                );
+                //controller.getPost();
+                //showNewPostFunction(context);
               },
               icon: const Icon(Icons.add))
         ],
@@ -56,25 +64,27 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
               }
 
               if (!controller.working) {
-                return Center(
-                  child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (Post post in controller.postList)
-                            GestureDetector(
-                              onTap: () => _dialogBuilder(
-                                  context,
-                                  post,
-                                  usercontroller.getUser(post.id)!.name,
-                                  controller),
-                              child: SummaryCard(
-                                  post: post, usercontroller: usercontroller),
+                return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (Post post in controller.postList)
+                          GestureDetector(
+                            onTap: () => _dialogBuilder(
+                                context,
+                                post,
+                                usercontroller.getUser(post.userId).name,
+                                controller),
+                            child: SummaryCard(
+                              post: post,
+                              usercontroller: usercontroller,
+                              username:
+                                  usercontroller.getUser(post.userId).name,
                             ),
-                        ],
-                      )),
-                );
+                          ),
+                      ],
+                    ));
               }
               return const Center(
                 child: SpinKitChasingDots(
@@ -92,63 +102,123 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
   }
 }
 
-Future<void> _dialogBuilder(BuildContext context, Post post, String? username,
-    PostController controller) async {
-  TextEditingController titleController =
-      TextEditingController(text: post.title);
-  TextEditingController bodyController = TextEditingController(text: post.body);
-
-  await showDialog<void>(
+Future<void> _dialogBuilder(BuildContext context, Post post, String username,
+    PostController controller) {
+  return showDialog<void>(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
         backgroundColor: Colors.white,
-        title: Text("Edit Post", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          post.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            height: 1.2,
+            color: Colors.purple,
+          ),
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15.0),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: InputDecoration(
-                labelText: 'Title',
-              ),
+        content: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: MediaQuery.of(context).size.width * 0.7,
             ),
-            SizedBox(height: 10),
-            TextField(
-              controller: bodyController,
-              decoration: InputDecoration(
-                labelText: 'Content',
-              ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.body,
+                  style: const TextStyle(
+                    color: Color.fromARGB(255, 37, 37, 37),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'by $username',
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 37, 37, 37),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 50),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => EditScreen(
+                            post: post,
+                            username: username,
+                            controller: controller,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 118, 34, 133),
+                      minimumSize: const Size(
+                        double.infinity,
+                        50,
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Edit Post',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await controller.deletePost(post.id);
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 141, 37, 63),
+                      minimumSize: const Size(
+                        double.infinity,
+                        50,
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Delete Post',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Post updatedPost = Post(
-                id: post.id,
-                title: titleController.text,
-                body: bodyController.text,
-                userId: post.userId,
-              );
-
-              controller.updatePostLocally(updatedPost);
-              Navigator.of(context).pop();
-            },
-            child: Text("Update"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              controller.deletePost(post.id);
-              Navigator.of(context).pop();
-            },
-            child: Text("Delete"),
-          ),
-        ],
       );
     },
   );
@@ -215,9 +285,10 @@ class _AddPostDialogState extends State<AddPostDialog> {
 
 class PostController with ChangeNotifier {
   Map<String, dynamic> posts = {};
-  List<Post> postList = []; // Convert to a local List for UI
+  List<Post> postList = [];
   bool working = true;
   Object? error;
+  int lastPostCounter = 0;
 
   clear() {
     error = null;
@@ -246,9 +317,9 @@ class PostController with ChangeNotifier {
       print(res.body);
 
       Map<String, dynamic> result = jsonDecode(res.body);
-
       Post output = Post.fromJson(result);
       posts[output.id.toString()] = output;
+      print(posts);
       working = false;
       notifyListeners();
       return output;
@@ -262,19 +333,27 @@ class PostController with ChangeNotifier {
     }
   }
 
-  Future<void> updatePostLocally(Post updatedPost) async {
+  Future<void> getPosts() async {
     try {
       working = true;
-      if (error != null) error = null;
+      clear();
+      List result = [];
+      int limit = 3;
 
-      int index = postList.indexWhere((post) => post.id == updatedPost.id);
-      if (index != -1) {
-        postList[index] = updatedPost;
-        posts[updatedPost.id.toString()] = updatedPost;
-        notifyListeners();
+      http.Response res = await HttpService.get(
+          url: "https://jsonplaceholder.typicode.com/posts?_limit=$limit");
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        throw Exception("${res.statusCode} | ${res.body}");
       }
+      result = jsonDecode(res.body);
 
+      List<Post> tmpPost = result.map((e) => Post.fromJson(e)).toList();
+      posts = {for (Post p in tmpPost) "${p.id}": p};
+      print(posts);
+      postList = tmpPost;
+      lastPostCounter = limit + 1;
       working = false;
+      notifyListeners();
     } catch (e, st) {
       print(e);
       print(st);
@@ -284,21 +363,61 @@ class PostController with ChangeNotifier {
     }
   }
 
-  Future<void> getPosts() async {
+  Future<Post> getPost() async {
     try {
       working = true;
-      clear();
-      List result = [];
-      http.Response res = await HttpService.get(
-          url: "https://jsonplaceholder.typicode.com/posts");
+      notifyListeners();
+
+      final response = await http.get(Uri.parse(
+          "https://jsonplaceholder.typicode.com/posts/$lastPostCounter"));
+
+      if (response.statusCode != 200) {
+        throw Exception("${response.statusCode} | ${response.body}");
+      }
+
+      final Map<String, dynamic> result = jsonDecode(response.body);
+      final Post newPost = Post.fromJson(result);
+
+      posts[newPost.id.toString()] = newPost;
+      postList.add(newPost);
+      lastPostCounter++;
+
+      working = false;
+      notifyListeners();
+      return newPost;
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+      throw Exception("Failed to fetch post");
+    }
+  }
+
+  Future<void> updatePost(Post updatedPost) async {
+    try {
+      working = true;
+      if (error != null) error = null;
+
+      http.Response res = await HttpService.put(
+        url: "https://jsonplaceholder.typicode.com/posts/${updatedPost.id}",
+        body: updatedPost.toJson(),
+      );
+
       if (res.statusCode != 200 && res.statusCode != 201) {
         throw Exception("${res.statusCode} | ${res.body}");
       }
-      result = jsonDecode(res.body);
 
-      List<Post> tmpPost = result.map((e) => Post.fromJson(e)).toList();
-      posts = {for (Post p in tmpPost) "${p.id}": p};
-      postList = tmpPost;
+      Map<String, dynamic> result = jsonDecode(res.body);
+
+      posts[result['id'].toString()] = Post.fromJson(result);
+
+      int index = postList.indexWhere((post) => post.id == updatedPost.id);
+      if (index != -1) {
+        postList[index] = Post.fromJson(result);
+      }
+
       working = false;
       notifyListeners();
     } catch (e, st) {
@@ -313,17 +432,22 @@ class PostController with ChangeNotifier {
   Future<void> deletePost(int id) async {
     try {
       working = true;
-      notifyListeners();
+      if (error != null) error = null;
 
-      // Remove post from local state for UI Changes
+      http.Response res = await HttpService.delete(
+        url: "https://jsonplaceholder.typicode.com/posts/$id",
+      );
+
+      if (res.statusCode != 200 && res.statusCode != 204) {
+        throw Exception("${res.statusCode} | ${res.body}");
+      }
+
       posts.remove(id.toString());
       postList.removeWhere((post) => post.id == id);
 
       working = false;
       notifyListeners();
     } catch (e, st) {
-      print(e);
-      print(st);
       error = e;
       working = false;
       notifyListeners();
@@ -337,34 +461,16 @@ class UserController with ChangeNotifier {
   Object? error;
 
   List<User> get userList => users.values.whereType<User>().toList();
-  User? getUser(int id) {
-    // Check if the user exists in the map
-    if (users.containsKey(id.toString())) {
-      return users[id.toString()];
-    } else {
-      return const User(
-          id: 0,
-          name: "unk",
-          username: "unk",
-          email: "unk",
-          address: Address(
-              street: "unk",
-              suite: "unk",
-              city: "unk",
-              zipcode: "unk",
-              geo: Geo(lat: "unk", lng: "unk")),
-          phone: "unk",
-          website: "unk",
-          company: Company(name: "unk", catchPhrase: "unk", bs: "unk"));
-    }
-  }
 
-  getUsers() async {
+  User getUser(int id) => userList.firstWhere((user) => user.id == id);
+
+  Future<List<String>> getUsers() async {
     try {
       working = true;
       List result = [];
+      int limit = 3;
       http.Response res = await HttpService.get(
-          url: "https://jsonplaceholder.typicode.com/users");
+          url: "https://jsonplaceholder.typicode.com/users?_limit=$limit");
       if (res.statusCode != 200 && res.statusCode != 201) {
         throw Exception("${res.statusCode} | ${res.body}");
       }
@@ -374,14 +480,41 @@ class UserController with ChangeNotifier {
       users = {for (User u in tmpUser) "${u.id}": u};
       working = false;
       notifyListeners();
+
+      return tmpUser.map((user) => user.username).toList();
     } catch (e, st) {
       print(e);
       print(st);
       error = e;
       working = false;
       notifyListeners();
+      return [];
     }
   }
+
+  // getUsers() async {
+  //   try {
+  //     working = true;
+  //     List result = [];
+  //     http.Response res = await HttpService.get(
+  //         url: "https://jsonplaceholder.typicode.com/users");
+  //     if (res.statusCode != 200 && res.statusCode != 201) {
+  //       throw Exception("${res.statusCode} | ${res.body}");
+  //     }
+  //     result = jsonDecode(res.body);
+
+  //     List<User> tmpUser = result.map((e) => User.fromJson(e)).toList();
+  //     users = {for (User u in tmpUser) "${u.id}": u};
+  //     working = false;
+  //     notifyListeners();
+  //   } catch (e, st) {
+  //     print(e);
+  //     print(st);
+  //     error = e;
+  //     working = false;
+  //     notifyListeners();
+  //   }
+  // }
 
   clear() {
     users = {};
@@ -405,6 +538,26 @@ class HttpService {
       Map<String, dynamic>? headers}) async {
     Uri uri = Uri.parse(url);
     return http.post(uri, body: jsonEncode(body), headers: {
+      'Content-Type': 'application/json',
+      if (headers != null) ...headers
+    });
+  }
+
+  static Future<http.Response> put(
+      {required String url,
+      required Map<String, dynamic> body,
+      Map<String, dynamic>? headers}) async {
+    Uri uri = Uri.parse(url);
+    return http.put(uri, body: jsonEncode(body), headers: {
+      'Content-Type': 'application/json',
+      if (headers != null) ...headers
+    });
+  }
+
+  static Future<http.Response> delete(
+      {required String url, Map<String, dynamic>? headers}) async {
+    Uri uri = Uri.parse(url);
+    return http.delete(uri, headers: {
       'Content-Type': 'application/json',
       if (headers != null) ...headers
     });

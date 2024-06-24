@@ -8,10 +8,12 @@ class SummaryCard extends StatelessWidget {
     super.key,
     required this.post,
     required this.usercontroller,
+    required this.username,
   });
 
   final Post post;
   final UserController usercontroller;
+  final String username;
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +30,22 @@ class SummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              post.title,
-              style: TextStyle(
+              post.title.length > 20
+                  ? '${post.title.substring(0, 50)}...'
+                  : post.title,
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                height: 1.2, // Adjust the height value as needed
               ),
             ),
-            SizedBox(
-              height: 10,
+            const SizedBox(
+              height: 20,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text("- ${usercontroller.getUser(post.userId)!.name}"),
+                Text("- $username"),
               ],
             )
           ],
